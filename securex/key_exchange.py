@@ -14,14 +14,17 @@ class KeyExchange:
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
 
-    def derive_shared_key(self, peer_public_bytes: bytes) -> bytes:
+    def derive_shared_keys(self, peer_public_bytes: bytes):
         peer_public_key = serialization.load_pem_public_key(peer_public_bytes)
         shared_secret = self.private_key.exchange(ec.ECDH(), peer_public_key)
-        # derive 32 bytes shared key by HKDF
+
+        # One-time expansion of 64 bytes: the first 32 bytes are used for AES, the last 32 bytes are used for HMAC
         hkdf = HKDF(
             algorithm=hashes.SHA256(),
-            length=32,
+            length=64,
             salt=None,
             info=b"SecureX-v1",
         )
-        return hkdf.derive(shared_secret)
+        key_material = hkdf.derive(shared_secret)
+        aes_key, hmac_key = key_material[:32], key_material[32:]
+        return aes_key, hmac_key

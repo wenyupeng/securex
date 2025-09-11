@@ -1,42 +1,82 @@
 import socket
+import os
+from datetime import datetime
 from securex.key_exchange import KeyExchange
 from securex.secure_channel import SecureChannel
 from securex.io_utils import recv_frame
 
 HOST, PORT = "127.0.0.1", 65432
-TYPE_DATA, TYPE_CLOSE = 0x01, 0x02
+TYPE_DATA, TYPE_CLOSE, TYPE_FILE = 0x01, 0x02, 0x03
 
-def run_server():
+def handle_client(conn, addr):
+    print(f"[Server] Connected: {addr}")
     server_kex = KeyExchange()
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen(1)
-        print(f"[Server] Listening {HOST}:{PORT} ...")
 
-        conn, addr = s.accept()
-        with conn:
-            print("[Server] Connected:", addr)
+    try:
+        client_pub = conn.recv(4096)
+        if not client_pub:
+            print(f"[Server] ❌ Client {addr} disconnected during handshake")
+            return
 
-            client_pub = conn.recv(4096)
-            conn.sendall(server_kex.get_public_bytes())
+        sever_pub = server_kex.get_public_bytes()
+        conn.sendall(sever_pub)
+        aes_key, hmac_key = server_kex.derive_shared_keys(client_pub)
+        channel = SecureChannel(aes_key, hmac_key)
+        print(f"[Server] ✅ Secure channel established for {addr}. Key: {aes_key.hex()[:32]}...")
 
-            key = server_kex.derive_shared_key(client_pub)
-            channel = SecureChannel(key)
-            print("[Server] Secure channel established ✅")
-
-            while True:
-                try:
-                    msg_type, payload = recv_frame(conn)
-                except EOFError:
-                    print("[Server] Client disconnected")
+        while True:
+            try:
+                frame = recv_frame(conn)
+                if not frame:
+                    print(f"[Server] ❌ Client {addr} closed connection")
                     break
+                msg_type, payload = frame
 
                 if msg_type == TYPE_DATA:
-                    plaintext = channel.decrypt(payload)
-                    print("[Server] Received:", plaintext.decode())
+                    print(f"[Server:{addr}] Ciphertext: {payload.hex()}")
+                    plaintext = channel.decrypt(payload).decode(errors="ignore")
+                    print(f"[Server:{addr}] Decrypted: {plaintext}")
+
+                elif msg_type == TYPE_FILE:
+                    decrypted = channel.decrypt(payload)
+                    filename = f"received_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    with open(filename, "wb") as f:
+                        f.write(decrypted)
+                    size = os.path.getsize(filename)
+                    print(f"[Server:{addr}] 📁 File saved as '{filename}' ({size} bytes)")
+
                 elif msg_type == TYPE_CLOSE:
-                    print("[Server] Close request")
-                    break
+                    print(f"[Server] 📴 Client {addr} requested close. Clearing connection info.")
+                    break  # 清空连接，但不退出主服务器循环
+
+                else:
+                    print(f"[Server] ⚠ Unknown message type: {msg_type}")
+
+            except (ConnectionResetError, BrokenPipeError):
+                print(f"[Server] ❌ Connection reset by {addr}")
+                break
+            except Exception as e:
+                print(f"[Server] ❌ Error with {addr}: {e}")
+                break
+
+    finally:
+        conn.close()
+        print(f"[Server] Connection with {addr} closed. Waiting for new clients...\n")
+
+
+def run_server():
+    """
+    主服务器循环：保持运行，处理多个客户端的顺序连接
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        print(f"[Server] Listening {HOST}:{PORT} ...")
+
+        while True:
+            conn, addr = s.accept()
+            handle_client(conn, addr)
+
 
 if __name__ == "__main__":
     run_server()

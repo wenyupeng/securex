@@ -17,7 +17,7 @@ class SecureChatClient:
         top_frame = tk.Frame(root)
         top_frame.pack(fill=tk.X, padx=10, pady=(5, 0))
 
-        self.key_label = tk.Label(top_frame, text="[Key] 未连接", fg="blue", anchor="w", justify="left")
+        self.key_label = tk.Label(top_frame, text="[Key] ready to connect", fg="blue", anchor="w", justify="left")
         self.key_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
 
         self.connect_button = tk.Button(top_frame, text="Connect", command=self.connect_server)
@@ -92,7 +92,7 @@ class SecureChatClient:
             self.text_area.config(state="normal")
             self.text_area.delete(1.0, tk.END)
             self.text_area.config(state="disabled")
-            self.key_label.config(text="[Key] 未连接")
+            self.key_label.config(text="[Key] ready to connect")
 
             self.stop_button.config(state="disabled")
             self.send_button.config(state="disabled")

@@ -2,6 +2,7 @@ import socket
 from .message import Message
 import struct
 
+# Helper functions for sending and receiving framed messages over a socket
 def recv_exact(conn: socket.socket, n: int) -> bytes:
     chunks, remaining = [], n
     while remaining > 0:

@@ -1,5 +1,6 @@
 import struct
 
+# Message Types
 class Message:
     HEADER_FORMAT = "!BI"  # type (1B), length (4B)
     HEADER_SIZE = 5

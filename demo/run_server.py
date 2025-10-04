@@ -47,7 +47,7 @@ def handle_client(conn, addr):
 
                 elif msg_type == TYPE_CLOSE:
                     print(f"[Server] 📴 Client {addr} requested close. Clearing connection info.")
-                    break  # 清空连接，但不退出主服务器循环
+                    break  
 
                 else:
                     print(f"[Server] ⚠ Unknown message type: {msg_type}")
@@ -66,7 +66,7 @@ def handle_client(conn, addr):
 
 def run_server():
     """
-    主服务器循环：保持运行，处理多个客户端的顺序连接
+    Run the secure echo server that handles multiple clients sequentially.
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))

@@ -2,6 +2,7 @@ import os, hmac
 from cryptography.hazmat.primitives import hashes, hmac as hmac_lib
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+# Authenticated Encryption with Associated Data (AEAD) using AES-GCM + HMAC-SHA256
 class SecureChannel:
     def __init__(self, aes_key: bytes, hmac_key: bytes):
         self.aesgcm = AESGCM(aes_key)

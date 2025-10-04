@@ -2,6 +2,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+# Elliptic Curve Diffie-Hellman (ECDH) key exchange and HKDF key derivation
 class KeyExchange:
     """ECDH for exchange Key + HKDF to derive shared key"""
     def __init__(self):
